@@ -1,0 +1,142 @@
+{
+  "name": "azure_web_app_resource_exhaustion_issue",
+  "description": "The Azure Web App Resource Exhaustion Issue occurs when a web app exhausts its allocated resources (CPU, memory, etc.), leading to performance issues. This can be resolved by either scaling up the App Service plan to a higher SKU or identifying performance bottlenecks using application insights and optimizing the code.",
+  "params": [
+    {
+      "name": "APP_INSIGHTS_NAME",
+      "value": ""
+    },
+    {
+      "name": "NEW_SKU_NAME",
+      "value": ""
+    },
+    {
+      "name": "APP_SERVICE_PLAN_ID",
+      "value": ""
+    },
+    {
+      "name": "LOCATION",
+      "value": ""
+    },
+    {
+      "name": "WEB_APP_NAME",
+      "value": ""
+    },
+    {
+      "name": "APP_INSIGHTS_ID",
+      "value": ""
+    },
+    {
+      "name": "RESOURCE_GROUP_NAME",
+      "value": ""
+    },
+    {
+      "name": "APP_SERVICE_PLAN_NAME",
+      "value": ""
+    },
+    {
+      "name": "HOST_NAME",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    },
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Azure Web App Resource Exhaustion Issue\nThe Azure Web App Resource Exhaustion Issue occurs when a web app exhausts its allocated resources (CPU, memory, etc.), leading to performance issues. This can be resolved by either scaling up the App Service plan to a higher SKU or identifying performance bottlenecks using application insights and optimizing the code."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Get the details of the affected web app"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az webapp show --name ${WEB_APP_NAME} --resource-group ${RESOURCE_GROUP_NAME}`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Get the current App Service plan SKU"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az appservice plan show --resource-group ${RESOURCE_GROUP_NAME} --name ${APP_SERVICE_PLAN_NAME} --query \"sku.name\"`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Get performance metrics for the web app"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az monitor metrics list --resource ${APP_SERVICE_PLAN_ID} --metric \"CpuPercentage\" \"MemoryPercentage\" --interval 5m`"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check Application Insights is configured for the web app"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az webapp config appsettings list --name ${WEB_APP_NAME} --resource-group ${RESOURCE_GROUP_NAME} | grep -i applicationinsights`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Identify performance bottlenecks using Application Insights"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az monitor app-insights query --apps ${APP_INSIGHTS_ID} --analytics-query \"requests | summarize count(), avg(duration) by operation_Name\"`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Create and Connect Application Insights for the web app"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_create_app_insights_web_app($APP_INSIGHTS_NAME, $LOCATION, $WEB_APP_NAME, $RESOURCE_GROUP_NAME)"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Scale up the App Service plan to a higher SKU: This involves increasing the resources allocated to the web app, such as CPU and memory. This can be done through the Azure Portal or programmatically using Azure CLI or Azure PowerShell."
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_scale_up_app_service_plan($NEW_SKU_NAME, $WEB_APP_NAME, $RESOURCE_GROUP_NAME, $APP_SERVICE_PLAN_NAME)"
+    }
+  ]
+}
